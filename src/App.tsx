@@ -11,6 +11,9 @@ import ZoomControl from 'mapbox-gl-controls/lib/zoom';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
+import "@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions.css";
+import MapboxDirections from '@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions'
+
 const accessToken = process.env.REACT_APP_ACCESS_TOKEN;
 
 function App() {
@@ -27,13 +30,31 @@ function App() {
     let hoveredStateId = null;
 
     map.on("load", () => {
-      map.addControl(
-        new MapboxGeocoder({
-          accessToken,
-          mapboxgl,
-        }),
-        "top-left"
-      );
+      const layers = map.getStyle().layers;
+
+      const directions = new MapboxDirections({
+        accessToken,
+        unit: 'metric',
+        profile: 'mapbox/cycling'
+      });
+
+      map.addControl(directions, 'top-left');
+
+      // Find the index of the first symbol layer in the map style
+      let firstSymbolId;
+      layers?.forEach(layer => {
+        if (layer.type === "symbol" && !firstSymbolId) {
+          firstSymbolId = layer.id;
+        }
+      });
+
+      // map.addControl(
+      //   new MapboxGeocoder({
+      //     accessToken,
+      //     mapboxgl,
+      //   }),
+      //   "top-right"
+      // );
 
       // with browser detect:
       map.addControl(new LanguageControl());
@@ -72,6 +93,8 @@ function App() {
         hoveredStateId = null;
       });
 
+      console.log("firstSymbolId is", firstSymbolId);
+
       map.addControl(new MapboxTraffic());
 
       fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/russia.geojson")
@@ -98,7 +121,7 @@ function App() {
               'line-color': 'blue',
               'line-width': 1
             }
-          });
+          }, firstSymbolId);
 
           map.addLayer({
             'id': 'russia-fill',
@@ -115,7 +138,7 @@ function App() {
               ]
             }
           });
-        });
+        }, firstSymbolId);
     })
   }, []);
 
